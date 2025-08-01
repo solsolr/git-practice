@@ -1,0 +1,35 @@
+name: sqlproj-sample
+
+on:
+  push:
+    branches: [ "master" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Build SQL Project
+      run: dotnet build MyDatabaseProject.sqlproj
+
+    - name: Run Unit Tests
+      run: dotnet test Tests/MyDatabaseProject.Tests.csproj
+
+    - name: Publish DACPAC
+      run: dotnet publish MyDatabaseProject.sqlproj -o ./dacpac_output
+
+    - name: Deploy to SQL Server
+      run: |
+        sqlpackage /Action:Publish \
+                   /SourceFile:"./dacpac_output/MyDatabaseProject.dacpac" \
+                   /TargetServerName:"your.database.server" \
+                   /TargetDatabaseName:"YourTargetDb" \
+                   /TargetUser:"your_username" \
+                   /TargetPassword:"your_password"
